@@ -1,0 +1,7 @@
+/.vscode # ignore vs code setting folder
+/node_modules 
+./dist  # ignore the build folder
+
+*.env # ignore the files ending with .env
+.env # ignore main env file
+.env.* #ignore all the .env varient files
