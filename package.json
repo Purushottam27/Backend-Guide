@@ -1,0 +1,20 @@
+{
+  "name": "backend_guide",
+  "version": "1.0.0",
+  "description": "A collection of backend development concepts",
+  "homepage": "https://github.com/Purushottam27/Backend-Guide#readme",
+  "bugs": {
+    "url": "https://github.com/Purushottam27/Backend-Guide/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Purushottam27/Backend-Guide.git"
+  },
+  "license": "ISC",
+  "author": "Purushottam Nagar",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
