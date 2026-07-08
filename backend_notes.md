@@ -8,7 +8,7 @@
     constants.js -> Stores reusable project-wide constants to avoid hardcoding values.
 5. Install the dev dependencies with npm i -D 'name'  like nodemon, prettier and eslint and the production dependencies: npm i express mongoose dotenv bcrypt jsonwebtoken cookie-parser cors
 6. Then modify the package.json file -> type:module, in script dev:nodemon src/index.js
-7. Then create the foldes inside the src either by gitbash/linux cmd "mkdir controllers middlewares routes models db utilis" or create directly from explorer.
+7. Then create the folders inside the src either by gitbash/linux cmd "mkdir controllers middlewares routes models db utilis" or create directly from explorer.
 8. Then create the .prettierrc and prettierignore files and after dicussing with the teammates decide the .prettierrc file code which is used for formatting and reduce the conflict errors.
 
 # Project Structure
@@ -55,3 +55,9 @@ Project
 1. First think is to keep in mind that think practically what are the fields do really exist for that particular model and also think that does it is a string, number or array type and to which the field is linked.
 2. Also in the things like hashing the password , verifing it , generating the access and the refresh token through JWT is been done inside the user model itself by using the hooks pre(save) and method respectively.
 3. Also if we think that there is a need of pagination in any model then use -> mongoose-aggregate-paginate-v2 package as a plugin which help us to automatically handle the pagination.
+
+# Handling images,videos,files on cloudinary with the help of multer:
+1. Firstly we have configured cloudinary with the help of its documentation and by taking reference from the documentation we come to know how to upload the files and also we have handled the errors.
+2. In these approch we have used 2 step file upload approch first we temproary saved the file locally(disk storage) on the server through multer and then uploaded it on the cloudinary(where we have used the local path of the file). 
+3. Then we had created the multer middleware (Multer is an Express middleware used to handle multipart/form-data, which is the encoding used when a client uploads files like images, videos, PDFs, etc.)
+4. By reading the docuentation we have created our own storage(storage method) on the server where the files are temperary saved.
