@@ -50,3 +50,8 @@ Project
 1. We have created a asyncHandler.js helper file beacuse without it we have to write try and catch in every controller function but in asyncHandler we have to handle it single time and we can use it in multiple controllers.
 2. Then we created apiError.js file which actually handles the errors by extending the JS Error module and overwrite it which our custom errors so that we can easily handle them.
 3. Then we created apiResponse.js file which handles how we send the response to the user in a structured way.
+
+# Models and Schema:
+1. First think is to keep in mind that think practically what are the fields do really exist for that particular model and also think that does it is a string, number or array type and to which the field is linked.
+2. Also in the things like hashing the password , verifing it , generating the access and the refresh token through JWT is been done inside the user model itself by using the hooks pre(save) and method respectively.
+3. Also if we think that there is a need of pagination in any model then use -> mongoose-aggregate-paginate-v2 package as a plugin which help us to automatically handle the pagination.
