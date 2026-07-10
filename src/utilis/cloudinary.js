@@ -21,7 +21,7 @@ const uploadOnCloudinary = async function(localFilePath){
 
         console.log("File is uploaded on cloudinary ",response.url); // form reponse we get the public url which we can give to user to access the images.
 
-        // fs.unlinkSync(localFilePath)
+        // fs.unlink(localFilePath)
         return response
     } catch (error) {
         fs.unlinkSync(localFilePath) // remove the locally saved temporary file as the upload operation failed
