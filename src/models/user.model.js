@@ -57,11 +57,11 @@ userSchema.pre("save", async function () { // there we have to use normal functi
   
 });
 
-userSchema.method.isPasswordCorrect = async function (password){  // method to check the password
-  return await bcrypt.compare(password,this.password)
+userSchema.methods.isPasswordCorrect = async function (password){  // method to check the password
+  return await bcrypt.compare(password,this.password) 
 }
 
-userSchema.method.generateAccessToken = function(){
+userSchema.methods.generateAccessToken = function(){ // these is the method we have injected inside the user
   const payload = {
     _id : this._id,
     email:this.email,
@@ -72,7 +72,7 @@ userSchema.method.generateAccessToken = function(){
 
   return jwt.sign(payload,secret,{expiresIn:expiry})
 }
-userSchema.method.generateRefreshToken = function(){
+userSchema.methods.generateRefreshToken = function(){
   const payload = {    // it contain less info as it got refresh and its duration is more than access
     _id : this._id,
   }
