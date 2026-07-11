@@ -43,8 +43,8 @@ const registerUser = asyncHandler(async (req,res) =>{
 
     // 4
     console.log(req.files) // the multer middleware had injected these property inside the req obj which contain all the details about the files 
-    const avatarLocalPath = req.files?.['avatar'][0]?.path; 
-    const coverImageLocalPath = req.files?.['coverImage'][0]?.path
+    const avatarLocalPath = req.files?.avatar?.[0]?.path; 
+    const coverImageLocalPath = req.files?.coverImage?.[0]?.path
     // as we have injected the middleware inside the route for getting the specific field and its count so middleware stored them in the form of array inside the files so we extracted the specific file if it exist thorugh ['avatar'][0] and then if its path exist we have taken that
 
     // 5
@@ -58,6 +58,7 @@ const registerUser = asyncHandler(async (req,res) =>{
     // 7
     console.log(uploadAvatar)
     console.log(uploadCoverImage)
+    
     if(!uploadAvatar) throw new ApiError(400,"Avatar file is not uploaded");
 
     // 8
@@ -67,7 +68,7 @@ const registerUser = asyncHandler(async (req,res) =>{
         username:username,
         password:password,
         avatar:uploadAvatar.url, // we have taken the url from the response and later send it to user.
-        coverImage:uploadCoverImage.url || "",
+        coverImage:(uploadCoverImage !== null) ? uploadCoverImage.url : "", // agar user ne pas ni kiya to empty string store kr denge
     })
 
     console.log(user)

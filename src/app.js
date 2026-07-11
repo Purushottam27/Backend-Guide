@@ -11,6 +11,8 @@ app.use(cors({
     origin:process.env.CORS_ORIGIN,   // to allow only specific url from the frontend 
     credentials:true,
 }))
+app.use(express.static('public'))
+// app.use(express.static(path.join(__dirname, "public")));
 
 // Routes:
 import userRouter from './routes/user.routes.js'

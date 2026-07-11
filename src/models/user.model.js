@@ -49,12 +49,12 @@ const userSchema = new mongoose.Schema(
 );
 
 // these is the professional way to bcrypt the password instead of doing in signup but login remain same compare function.
-userSchema.pre("save", async (next) => {
+userSchema.pre("save", async function () { // there we have to use normal function not arrow to use this property
   // hook pre is used document ke save hone ke just phele hash kro
-  if (!this.isModified("password")) return next(); // passwrod change hua tabhi hash kro bar bar ni
+  if (!this.isModified("password")) return ; // passwrod change hua tabhi hash kro bar bar ni
 
   this.password = await bcrypt.hash(this.password, 10);
-  next();
+  
 });
 
 userSchema.method.isPasswordCorrect = async function (password){  // method to check the password
@@ -82,4 +82,4 @@ userSchema.method.generateRefreshToken = function(){
   return jwt.sign(payload,secret,{expiresIn:expiry})
 }
 
-export const User = mongoose.model("User", userSchema);
+export const User = mongoose.model("Youtube_User", userSchema);

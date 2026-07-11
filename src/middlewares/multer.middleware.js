@@ -3,7 +3,7 @@ import multer from 'multer'
 // code taken from the multer documentation
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, '../public/temp')
+    cb(null, "./public/temp") // root folder me hainisliye single . not ..
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now();
