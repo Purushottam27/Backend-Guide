@@ -250,9 +250,133 @@ const refreshAccessToken = asyncHandler(async(req,res)=>{
         throw new ApiError(500,error?.message || "Something went wrong while generating the refresh token")
     }
 })
+
+const changePassword = asyncHandler(async(req,res)=>{
+    const {oldPassword,newPassword} = req.body;
+
+    if(!oldPassword || !newPassword){
+        throw new ApiError(400,"All fields required")
+    }
+
+    const user = await User.findById(req.user?._id)
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
+
+    if(!isPasswordCorrect){
+        return new ApiError(400,"Invaild old password")
+    }
+
+    user.password = newPassword;
+    await user.save({validateBeforeSave:false})
+
+    return res.status(200).json(
+        new ApiResponse(200,{},"Password is changed successfully")
+    )
+})
+
+const getCurrentUser = asyncHandler(async(req,res)=>{
+    return res.status(200).json(
+        new ApiResponse(200,{user:req.user},"Current user fetched successfully")
+    )
+})
+
+const updateProfileDetails = asyncHandler(async(req,res)=>{
+    const {fullname,email} = req.body;
+
+    if(!fullname || !email){
+        throw new ApiError(400,"All fields required")
+    }
+
+    const user = await User.findByIdAndUpdate(req.user?._id,
+        {
+            $set:{
+                email:email,
+                fullname:fullname
+            }
+        },
+        {
+            new:true
+        }
+    ).select('-password -refreshToken')
+
+    res.status(200).json(
+        new ApiResponse(200,user,"Profile details updated successfully")
+    )
+})
+
+const updateUserAvatar = asyncHandler(async(req,res) => {
+    const avatarLocalPath = req.file?.path; // not files as we want ony single file 
+
+    if(!avatarLocalPath){
+        throw new ApiError(400,"User avatar not found")
+    }
+
+    const avatar = await uploadOnCloudinary(avatarLocalPath)
+
+    if(!avatar.url){
+        throw new ApiError(400,"Something went wrong file updating the avatar on cloudinary")
+    }
+
+    const updatedInfo = await User.findByIdAndUpdate(req.user?._id,
+        {
+            $set:{
+                avatar:avatar.url
+            }
+        },
+        {
+            new:true
+        }
+    ).select("-password -refreshToken")
+
+    if(!updatedInfo){
+        throw new ApiError(400,"Something went wrong file updating the avatar in Database")
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200,updatedInfo,"User avatar updated successfully")
+    )
+})
+
+const updateUserCoverImage = asyncHandler(async(req,res) => {
+    const coverImageLocalPath = req.file?.path; // not files as we want ony single file 
+
+    if(!coverImageLocalPath){
+        throw new ApiError(400,"User cover image not found")
+    }
+
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+
+    if(!coverImage.url){
+        throw new ApiError(400,"Something went wrong file updating the cover image on cloudinary")
+    }
+
+    const updatedInfo = await User.findByIdAndUpdate(req.user?._id,
+        {
+            $set:{
+                coverImage:coverImage.url
+            }
+        },
+        {
+            new:true
+        }
+    ).select("-password -refreshToken")
+
+    if(!updatedInfo){
+        throw new ApiError(400,"Something went wrong file updating the cover image in Database")
+    }
+
+    res.status(200).json(
+        new ApiResponse(200,updatedInfo,"User cover image updated successfully")
+    )
+})
+
 export {
     registerUser,
     loginUser,
     logoutUser,
-    refreshAccessToken
+    refreshAccessToken,
+    changePassword,
+    getCurrentUser,
+    updateProfileDetails,
+    updateUserAvatar,
+    updateUserCoverImage
 }
