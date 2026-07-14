@@ -369,6 +369,90 @@ const updateUserCoverImage = asyncHandler(async(req,res) => {
     )
 })
 
+const getUserProfileDetails = asyncHandler(async(req,res)=>{
+    const username = req.params?.username;
+    if(!username?.trim()){   // username ko DB me trim krke or lowercase me rakha hai isliye compare bhi ussi tara krna pade ga
+        throw new ApiError(400,"Username not found")
+    }
+
+    const channel = await User.aggregate([
+        {
+            $match:{
+                username:username?.toLowerCase()
+            },
+        },
+        {
+            // here we have to join the user with the channel to get all the documents which shows who have subscribed the channel it comes in array
+            $lookup:{
+                from:"subscriptions", // here the actual collection name should be written
+                localField:"_id",
+                foreignField:"channel",
+                as:"subscribers"
+            }
+            // Join User with Subscription collection to get all subscription
+            // documents where this user is the channel.
+            // This tells us who has subscribed to this channel.
+        }, // now the subscribers field is been added into the user doc which contains the array of obj of all subscribers
+        {
+            // here we join the user with the subscriber field to get all the doc which shows the which are the channels does the user have subscribed.
+            $lookup:{
+                from:"subscriptions", 
+                localField:"_id",
+                foreignField:"subscriber",
+                as:"subscribedTo"
+            }
+            // Join User with Subscription collection where this user is
+            // the subscriber.
+            // This tells us which channels this user has subscribed to.
+        }, // now the subscribedTo field is been added into the user doc which contains the array of obj of all channels user subscribedTo
+        {
+            $addFields:{
+                subscribersCount:{
+                    $size:"$subscribers"
+                },
+                channelsSubscribedToCount:{
+                    $size:"$subscribedTo"
+                },
+                isSubscribed:{
+                    $cond:{
+                        if:{
+                            $in: [req.user?._id,"$subscribers.subscriber"] 
+                            // subscribers is an array of subscription documents.
+                            // Each document contains subscriber and channel fields.
+                            // We check whether the logged-in user's _id exists in
+                            // subscribers.subscriber.
+                        },
+                        then:true,
+                        else:false
+                    }
+                }
+            }
+        },
+        {
+            $project:{  // which are the fields that we need to give in obj array
+                fullname : 1,
+                username: 1,
+                email: 1,
+                avatar: 1,
+                coverImage: 1,
+                createdAt: 1,
+                subscribersCount: 1,
+                channelsSubscribedToCount: 1,
+                isSubscribed: 1
+               
+            }
+        }
+    ])
+
+    if(!channel.length){
+        throw new ApiError(400,"Channel not found")
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200,channel[0],"User profile fetched successfully")
+    )
+})
+
 export {
     registerUser,
     loginUser,
@@ -378,5 +462,6 @@ export {
     getCurrentUser,
     updateProfileDetails,
     updateUserAvatar,
-    updateUserCoverImage
+    updateUserCoverImage,
+    getUserProfileDetails
 }
