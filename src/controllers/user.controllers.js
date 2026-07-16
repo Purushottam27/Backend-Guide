@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import {uploadOnCloudinary} from '../utilis/cloudinary.js'
 import {ApiResponse} from "../utilis/apiResponse.js"
 import jwt from "jsonwebtoken"
+import mongoose from "mongoose";
 const generateAccessAndRefreshTokens = async (userId)=>{
     try {
         const user = await User.findById(userId)
@@ -369,7 +370,8 @@ const updateUserCoverImage = asyncHandler(async(req,res) => {
     )
 })
 
-const getUserProfileDetails = asyncHandler(async(req,res)=>{
+// get user channel details:
+const getUserChannelProfile = asyncHandler(async(req,res)=>{
     const username = req.params?.username;
     if(!username?.trim()){   // username ko DB me trim krke or lowercase me rakha hai isliye compare bhi ussi tara krna pade ga
         throw new ApiError(400,"Username not found")
@@ -453,6 +455,58 @@ const getUserProfileDetails = asyncHandler(async(req,res)=>{
     )
 })
 
+const getWatchedHistory = asyncHandler(async(req,res)=>{
+    // while using the aggregation pipeline $match operator we cannot able to match _id = req.user._id as req.user._id it returns _id in string form and by the help of mongoose we can able to match it with DB as it converts it into the Object id formate but in aggregation it directly send data to DB so need to convert the req.user._id into ObjectId by new mongoose.Types.ObjectId(req.user._id).
+    const user = await User.aggregate([
+        {
+            $match:{
+                _id : new mongoose.Types.ObjectId(req.user?._id)
+            }
+        },
+        {
+            $lookup:{
+                from:"videos", // actual collection name in DB
+                localField:"watchedHistory",
+                foreignField:"_id",
+                as:"watchedVideos",
+                // now at these point we have joined the user and the videos schema now we have the owner access and with the help of it we have to again join it with the user to get the channel info.
+                // So now we have to apply another left outer join(lookup)
+                pipeline:[
+                    {
+                        $lookup:{
+                            from:"users",
+                            localField:"owner",
+                            foreignField:"_id",
+                            as:"owner",
+                            // now we have joined the videos and the user but now we want only the relevenet info of the user(owner). So now we again use nested pipeline for that.
+                            pipeline:[
+                                {
+                                    $project:{
+                                        username:1,
+                                        avatar: 1
+                                    }
+                                }, 
+                                // here we have taken the relevent data but now these pipeline returns a data in the array form and the first val of array is the detsil of the owner in obj form so to get that we simply add one field owner so that we can directy get the details in obj
+                                {
+                                    $addFields:{
+                                        owner:{
+                                            $first:"$owner"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    ])
+
+    return res.status(200).json(
+        new ApiResponse(200,user[0].watchedVideos,"Watched history has been fetched successfully")
+    )
+})
+
 export {
     registerUser,
     loginUser,
@@ -463,5 +517,6 @@ export {
     updateProfileDetails,
     updateUserAvatar,
     updateUserCoverImage,
-    getUserProfileDetails
+    getUserChannelProfile,
+    getWatchedHistory
 }
