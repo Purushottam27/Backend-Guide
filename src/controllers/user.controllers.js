@@ -314,7 +314,7 @@ const updateUserAvatar = asyncHandler(async(req,res) => {
     const avatar = await uploadOnCloudinary(avatarLocalPath)
 
     if(!avatar.url){
-        throw new ApiError(400,"Something went wrong file updating the avatar on cloudinary")
+        throw new ApiError(500,"Something went wrong file updating the avatar on cloudinary")
     }
 
     const updatedInfo = await User.findByIdAndUpdate(req.user?._id,
@@ -329,7 +329,7 @@ const updateUserAvatar = asyncHandler(async(req,res) => {
     ).select("-password -refreshToken")
 
     if(!updatedInfo){
-        throw new ApiError(400,"Something went wrong file updating the avatar in Database")
+        throw new ApiError(500,"Something went wrong file updating the avatar in Database")
     }
 
     return res.status(200).json(

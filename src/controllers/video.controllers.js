@@ -145,6 +145,7 @@ const getVideo = asyncHandler(async(req,res)=>{
     )
 })
 
+// owener can only have the right to do these 
 const channelVideos = asyncHandler(async(req,res)=>{
     const channelName = req.params?.channelName;
 
@@ -171,8 +172,91 @@ const channelVideos = asyncHandler(async(req,res)=>{
         new ApiResponse(200,channelVideos,"Channel videos fetched successfully ")
     )
 })
+
+const updateVideo = asyncHandler(async(req,res)=>{
+    const videoId = req.params?.videoId
+    const {title,description,isPublished} = req.body
+
+    if(!title || !description){
+        throw new ApiError(400,'All fields required')
+    }
+
+    const videoLocalPath = req.files?.videoFile?.[0]?.path
+    const thumbnailLocalPath = req.files?.thumbnail?.[0]?.path
+
+    if(!videoLocalPath){
+        throw new ApiError(400,'Video file required')
+    }
+    if(!thumbnailLocalPath){
+        throw new ApiError(400,'Thumbnail required')
+    }
+
+    const updateVideoFile = await uploadOnCloudinary(videoLocalPath)
+    const updateThumbnail = await uploadOnCloudinary(thumbnailLocalPath)
+
+    if(!updateVideoFile.url || !updateThumbnail.url){
+        throw new ApiError(500,'Something went wrong file uploading video or thumbnail')
+    }
+
+    const updateVideo = await Video.findOneAndUpdate(
+        {
+            _id: videoId,
+            owner: req.user?._id,
+        },
+        {
+            videoFile: updateVideoFile.url,
+            thumbnail: updateThumbnail.url,
+            title: title,
+            description:description,
+            duration: updateVideoFile.duration,
+            isPublished:isPublished
+        },
+        {
+            new:true
+        }
+    ) 
+
+    if(!updateVideo){
+        throw new ApiError(500,'Something went wrong while uploading the video in database')
+    }
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            updateVideo,
+            'Video updated successfully'
+        )
+    )
+})
+
+const deleteVideo = asyncHandler(async(req,res)=>{
+    alert("Video once deleted can't be restored")
+    const videoId = req.params?.videoId
+
+    if(!videoId){
+        throw new ApiError(400,'Video not found')
+    }
+
+    const video = await Video.findOneAndDelete(
+        {
+            _id: videoId,
+            owner: req.user?._id,
+        }
+    )
+
+    if(!video){
+        throw new ApiError(500,"Something went wrong while deleting the video")
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200,{},"Video is deleted successfully")
+    )
+})
+
 export {
     uploadVideo,
     getVideo,
-    channelVideos
+    channelVideos,
+    updateVideo,
+    deleteVideo
 }
