@@ -32,7 +32,8 @@ router.patch('/updateProfile',verifyJWT,updateProfileDetails)
 router.patch('/updateAvatar',verifyJWT,upload.single("avatar"),updateUserAvatar) 
 router.patch('/updateCoverImage',verifyJWT,upload.single("coverImage"),updateUserCoverImage) 
 
-router.post('/channel/:username',verifyJWT,getUserChannelProfile),
+router.get('/channel/:username',verifyJWT,getUserChannelProfile),
+
 router.post('/watchHistory',verifyJWT,getWatchedHistory)
 
 export default router

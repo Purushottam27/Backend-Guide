@@ -145,8 +145,34 @@ const getVideo = asyncHandler(async(req,res)=>{
     )
 })
 
+const channelVideos = asyncHandler(async(req,res)=>{
+    const channelName = req.params?.channelName;
 
+    if(!channelName?.trim()){
+        throw new ApiError(400,"No channel found")
+    }
+
+    const channel = await User.findOne({
+        username:channelName?.toLowerCase()
+    })
+    if(!channel.length){
+        throw new ApiError(400,'Channel not found')
+    }
+
+    const channelVideos = await Video.find({
+        owner: channel._id
+    })
+
+    if(!channelVideos.length){
+        throw new ApiError(400, "No videos has been uploaded yet")
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200,channelVideos,"Channel videos fetched successfully ")
+    )
+})
 export {
     uploadVideo,
-    getVideo
+    getVideo,
+    channelVideos
 }
