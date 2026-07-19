@@ -124,13 +124,55 @@ const getVideo = asyncHandler(async(req,res)=>{
         },
 
         // likes lookup 
+        {
+            $lookup:{
+                from:'likes',
+                localField:'_id',
+                foreignField:'likedVideo',
+                as:'likeAndDislikeDetails'
+            }
+        },
         // comment lookup
         // then addfield that counts the total like, comment and isliked or isSubsribed
 
         {
             $addFields:{
-                ownerDetails:{
+                owner:{
                     $first:'$owner'
+                },
+
+                likeDetails:{
+                    $first:'$likeAndDislikeDetails'
+                },
+
+                totalLikesCount:{
+                    // the size want an array so if the array is empty ir shows error
+                    $size:{
+                        $ifNull: ["$likeDetails.userLiked",[]]
+
+                    }
+                },
+                totalDislikesCount:{
+                    $size:{
+                        $ifNull: ["$likeDetails.userDisliked",[]]
+                    }
+                },
+
+                isLiked:{
+                    $in:[
+                        req.user?._id,
+                        {
+                            $ifNull: ["$likeDetails.userLiked",[]]
+                        }
+                    ]
+                },
+                isDisliked:{
+                    $in:[
+                        req.user?._id,
+                        {
+                            $ifNull: ["$likeDetails.userDisliked",[]]
+                        }
+                    ]
                 }
             }
         },

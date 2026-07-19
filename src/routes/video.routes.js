@@ -2,6 +2,7 @@ import express from 'express'
 import {upload} from "../middlewares/multer.middleware.js"
 import { verifyJWT } from '../middlewares/auth.middleware.js'
 import { channelVideos, deleteVideo, getVideo, updateVideo, uploadVideo } from '../controllers/video.controllers.js'
+import { handleDislike, handleLike } from '../controllers/like.contollers.js'
 
 const videoRouter = express.Router()
 
@@ -25,5 +26,9 @@ videoRouter.patch('/:videoId',verifyJWT,updateVideo)
 
 videoRouter.delete('/:videoId',verifyJWT,deleteVideo)
 
+// from like controller
+videoRouter.post('/:videoId/like',verifyJWT,handleLike)
+
+videoRouter.post('/:videoId/dislike',verifyJWT,handleDislike)
 
 export default videoRouter
