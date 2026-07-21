@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
-import { Like } from "../models/like.model";
+import { Like } from "../models/like.model.js";
 import { ApiError } from "../utilis/apiError.js";
-import { ApiResponse } from "../utilis/apiResponse";
+import { ApiResponse } from "../utilis/apiResponse.js";
 import { asyncHandler } from "../utilis/asyncHandler.js";
 
 // helper function
@@ -36,6 +36,7 @@ const handleLike = asyncHandler(async(req,res)=>{
     // document exist or not
     await ensureLikeDocument(videoId)
 
+    // agar phle se like hai to us like ko hata do
     const removeLike =  await Like.findOneAndUpdate(
         {
             likedVideo:videoId,
@@ -51,7 +52,7 @@ const handleLike = asyncHandler(async(req,res)=>{
         }
     )
 
-    if(!removeLike){ // user has not liked the video yet
+    if(!removeLike){ // user has not liked the video yet 
         const addLike = await Like.findOneAndUpdate(
             {
                 likedVideo:videoId
