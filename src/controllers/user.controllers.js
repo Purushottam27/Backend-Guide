@@ -225,8 +225,8 @@ const refreshAccessToken = asyncHandler(async(req,res)=>{
         }
     
         // 7 then generate the access and refresh token 
-        const {accessToken,newRefreshToken} = await generateAccessAndRefreshTokens(user._id)
-    
+        const {accessToken,refreshToken} = await generateAccessAndRefreshTokens(user._id)
+
         // 8 then send the response to user
         const options = {
             httpOnly : true,
@@ -236,13 +236,13 @@ const refreshAccessToken = asyncHandler(async(req,res)=>{
     
         return res.status(201)
         .cookie('accessToken',accessToken,options)
-        .cookie('refreshToken',newRefreshToken,options)
+        .cookie('refreshToken',refreshToken,options)
         .json(
             new ApiResponse(
                 200,
                 {
                     accessToken:accessToken,
-                    refreshToken:newRefreshToken
+                    refreshToken:refreshToken
                 },
                 "Token is refreshed successfully"
             )
