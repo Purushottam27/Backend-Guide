@@ -1,9 +1,10 @@
+import mongoose from "mongoose";
 import { Comment } from "../models/comment.model.js";
 import { ApiError } from "../utilis/apiError.js";
 import { ApiResponse } from "../utilis/apiResponse.js";
 import { asyncHandler } from "../utilis/asyncHandler.js";
 
-const createComment = asyncHandler(async(req,res)=>{
+const addComment = asyncHandler(async(req,res)=>{
     const videoId = req.params.videoId
     const {commentMessage} = req.body
 
@@ -28,15 +29,62 @@ const createComment = asyncHandler(async(req,res)=>{
 
 const getComments = asyncHandler(async(req,res)=>{
     const videoId = req.params.videoId
-
-    const comments = await Comment.findById(videoId).populate("userCommented", "username avatar")
-
-    if(!comments.length){
+    const {page = 1, limit = 10} = req.query
+    
+    const comment = await Comment.aggregate([
+        {
+            $match:{
+                video:new mongoose.Types.ObjectId(videoId)
+            }
+        },
+        {
+            $lookup:{
+                from:"users",
+                localField:"userCommented",
+                foreignField:"_id",
+                as:"owner",
+                pipeline:[
+                    {
+                        $project:{
+                            username: 1,
+                            avatar:1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $lookup:{
+                from:"likes",
+                localField:"_id",
+                foreignField:"commentLiked",
+                as:"likeDetails",
+            }
+        },
+        {
+            $addFields:{
+                owner:{
+                    $first:'$owner'
+                },
+                totalLikes:{
+                    $size:"$likeDetails"
+                },
+                isLiked:{
+                    $cond:{
+                        if: req.user?._id === "$likeDetails.likedBy",
+                        then: true,
+                        else:false
+                    }
+                }
+            }
+        }
+    ])
+    if(!comment.length){
         throw new ApiError(400,'Comments not found')
     }
 
     return res.status(200).json(
-        new ApiResponse(200,comments,"All the comments fetched successfully")
+        new ApiResponse(200,comment,"All the comments fetched successfully")
     )
 })
 
@@ -105,7 +153,7 @@ const pinComment = asyncHandler(async(req,res)=>{
 
     const commentVideoInfo = await Comment.findOne({
         _id:commentId
-    }).populate('video','owner')
+    }).populate('video','owner').populate("userCommented", "username avatar")
 
     if(commentVideoInfo.video[0].owner !== userId){
         throw new ApiError(400,'Rights are resereved')
@@ -120,7 +168,7 @@ const pinComment = asyncHandler(async(req,res)=>{
 })
 export {
     getComments,
-    createComment,
+    addComment,
     editComment,
     deleteComment,
     pinComment

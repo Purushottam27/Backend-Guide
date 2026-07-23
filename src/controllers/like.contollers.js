@@ -4,142 +4,42 @@ import { ApiError } from "../utilis/apiError.js";
 import { ApiResponse } from "../utilis/apiResponse.js";
 import { asyncHandler } from "../utilis/asyncHandler.js";
 
-// helper function
-const ensureLikeDocument = async(videoId)=>{
-    if(!videoId){
-        throw new ApiError(400,'Video not found')
-    }
-
-    const video = await Like.findOne(
-        {
-            likedVideo:videoId
-        }
-    )
-
-    if(!video){
-        const createLikeDoc = await Like.create({
-            likedVideo : videoId,
-            userLiked: [],
-            userDisliked: [],
-        })
-    }
-    return 
-}
-
-const handleLike = asyncHandler(async(req,res)=>{
+const likeVideo = asyncHandler(async(req,res)=>{
     const videoId = req.params.videoId
 
     if(!videoId){
         throw new ApiError(400,'Video not found')
     }
-    
-    // document exist or not
-    await ensureLikeDocument(videoId)
 
     // agar phle se like hai to us like ko hata do
-    const removeLike =  await Like.findOneAndUpdate(
+    const like =  await Like.findOne(
         {
             likedVideo:videoId,
-            userLiked : req.user?._id // it means user already liked the video
-        },
-        {
-            $pull:{
-                userLiked : req.user?._id
-            }
-        },
-        {
-            new:true
+            likedBy : req.user?._id // it means user already liked the video
         }
     )
 
-    if(!removeLike){ // user has not liked the video yet 
-        const addLike = await Like.findOneAndUpdate(
+    if(!like){ // user has not liked the video yet 
+        const addLike = await Like.create(
             {
-                likedVideo:videoId
-            },
-            {
-                $pull:{
-                    userDisliked : req.user?._id
-                },
-                $addToSet:{
-                    userLiked:req.user?._id
-                }
-            },
-            {
-                new:true
+                likedVideo:videoId,
+                likedBy:req.user?._id
             }
         )
 
-        if(!addLike){
-            throw new ApiError(400,'Like count not updated')
-        }
-
         return res.status(200).json(
-            new ApiResponse(200,likeDetails, "Video liked successfully")
-        )
-    }else{
-       
-        return res.status(200).json(
-            new ApiResponse(200,removeLike, "Removed like successfully")
+            new ApiResponse(200,addLike, "Video liked successfully")
         )
     }
-})
 
-const handleDislike = asyncHandler(async(req,res)=>{
-    const videoId = req.params.videoId
+    await Like.findOneAndDelete({
+        likedVideo:videoId,
+        likedBy:req.user?._id
+    })
 
-    if(!videoId){
-        throw new ApiError(400,'Video not found')
-    }
-    
-    await ensureLikeDocument(videoId)
-
-    const removeDislike =  await Like.findOneAndUpdate(
-        {
-            likedVideo:videoId,
-            userDisliked : req.user?._id // it means user already disliked the video
-        },
-        {
-            $pull:{
-                userDisliked : req.user?._id
-            }
-        },
-        {
-            new:true
-        }
+    return res.status(200).json(
+        new ApiResponse(200,{}, "Removed like successfully")
     )
-
-    if(!removeDislike){ // user has not disliked the video yet
-        const addDislike = await Like.findOneAndUpdate(
-            {
-                likedVideo:videoId
-            },
-            {
-                $pull:{
-                    userLiked : req.user?._id
-                },
-                $addToSet:{
-                    userDisliked:req.user?._id
-                }
-            },
-            {
-                new:true
-            }
-        )
-
-        if(!addDislike){
-            throw new ApiError(400,'Like count not updated')
-        }
-
-        return res.status(200).json(
-            new ApiResponse(200,addDislike, "Video unliked successfully")
-        )
-    }else{
-       
-        return res.status(200).json(
-            new ApiResponse(200,removeDislike, "Removed the unlike successfully")
-        )
-    }
 })
 
 const getLikedVideos = asyncHandler(async(req,res)=>{
@@ -150,7 +50,7 @@ const getLikedVideos = asyncHandler(async(req,res)=>{
         // 1. Get all Like documents where the current user liked the video
         {
             $match:{
-                userLiked: new mongoose.Types.ObjectId(userId)
+                likedBy: new mongoose.Types.ObjectId(userId)
             }
         },
         // 2. Join the Video document
@@ -170,7 +70,7 @@ const getLikedVideos = asyncHandler(async(req,res)=>{
                             as:"owner",
                             pipeline:[
                                 {
-                                    $project:{
+                                    $project:{ // channel ka username and avatar leke aye
                                         username:1,
                                         avatar:1
                                     }
@@ -220,8 +120,68 @@ const getLikedVideos = asyncHandler(async(req,res)=>{
     )
 })
 
+const likeComment = asyncHandler(async(req,res)=>{
+    const {commentId} = req.params
+    // first need to check does the comment is already liked by the user or not
+    const like = await Like.findOne({
+        likedBy: req.user?._id,
+        commentLiked:commentId
+    })
+
+    // now if user had not found means he had not liked yet
+    if(!like){
+        const likeComment = await Like.create({
+            likedBy: req.user?._id,
+            commentLiked:commentId
+        })
+        return res.status(200).json(
+            new ApiResponse(200,likeComment,"User liked the comment")
+        )
+    }
+
+    // if user aready had liked the comment then remove the like
+    await Like.findOneAndDelete({
+        likedBy: req.user?._id,
+        commentLiked:commentId
+    })
+    return res.status(200).json(
+        new ApiResponse(200,{},"User unliked the comment")
+    )
+})
+
+const likeTweet = asyncHandler(async(req,res)=>{
+    const {tweetId} = req.params
+
+    // first need to check does the tweet is already liked by the user or not
+    const like = await Like.findOne({
+        likedBy: req.user?._id,
+        tweetLiked:tweetId
+    })
+
+    // now if user had not found means he had not liked yet so like the tweet and create its documnet which contain only likedBy and tweetLiked id
+    if(!like){
+        const likedTweet = await Like.create({
+            likedBy: req.user?._id,
+            tweetLiked:tweetId
+        })
+        return res.status(200).json(
+            new ApiResponse(200,likedTweet,"User liked the tweet")
+        )
+    }
+
+    // if user aready had liked the comment then remove the like
+    await Like.findOneAndDelete({
+        likedBy: req.user?._id,
+        tweetLiked:tweetId
+    })
+    return res.status(200).json(
+        new ApiResponse(200,{},"User unliked the tweet")
+    )
+})
+
 export {
-    handleLike,
-    handleDislike,
-    getLikedVideos
+    likeVideo,
+    getLikedVideos,
+    likeComment,
+    likeTweet
 }

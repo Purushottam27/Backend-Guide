@@ -54,7 +54,6 @@ const uploadVideo = asyncHandler(async(req,res)=>{
     )
 })
 
-// need to update if we create the like and comment schema a s well
 const getVideo = asyncHandler(async(req,res)=>{
     const videoId = req.params?.id
     const userId = req.user?._id
@@ -114,7 +113,7 @@ const getVideo = asyncHandler(async(req,res)=>{
                 as:'owner',
                 pipeline:[
                     {
-                        $project:{
+                        $project:{ // kis channel ne video upload kiya hai
                             username:1,
                             avatar: 1
                         }
@@ -129,10 +128,20 @@ const getVideo = asyncHandler(async(req,res)=>{
                 from:'likes',
                 localField:'_id',
                 foreignField:'likedVideo',
-                as:'likeAndDislikeDetails'
+                as:'likeDetails'
             }
         },
+
         // comment lookup
+        {
+            $lookup:{
+                from:'comments',
+                localField:'_id',
+                foreignField:'video',
+                as:'commentsDetails'
+            }
+        },
+
         // then addfield that counts the total like, comment and isliked or isSubsribed
 
         {
@@ -141,39 +150,23 @@ const getVideo = asyncHandler(async(req,res)=>{
                     $first:'$owner'
                 },
 
-                likeDetails:{
-                    $first:'$likeAndDislikeDetails'
-                },
-
                 totalLikesCount:{
                     // the size want an array so if the array is empty ir shows error
-                    $size:{
-                        $ifNull: ["$likeDetails.userLiked",[]]
-
-                    }
+                    $size: '$likeDetails'
                 },
-                totalDislikesCount:{
-                    $size:{
-                        $ifNull: ["$likeDetails.userDisliked",[]]
-                    }
+
+                totalComments:{
+                    $size: '$commentsDetails'
                 },
 
                 isLiked:{
-                    $in:[
-                        req.user?._id,
-                        {
-                            $ifNull: ["$likeDetails.userLiked",[]]
-                        }
-                    ]
-                },
-                isDisliked:{
-                    $in:[
-                        req.user?._id,
-                        {
-                            $ifNull: ["$likeDetails.userDisliked",[]]
-                        }
-                    ]
+                    $cond:{
+                        if: req.user?._id === "$likeDetails.likedBy",
+                        then: true,
+                        else:false
+                    }
                 }
+            
             }
         },
     ])
@@ -204,7 +197,7 @@ const channelVideos = asyncHandler(async(req,res)=>{
 
     const channelVideos = await Video.find({
         owner: channel._id
-    })
+    }).populate('owner',"username avatar")
 
     if(!channelVideos.length){
         throw new ApiError(400, "No videos has been uploaded yet")
@@ -215,29 +208,37 @@ const channelVideos = asyncHandler(async(req,res)=>{
     )
 })
 
+const getAllVideos = asyncHandler(async(req,res)=>{
+    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
+
+    const videos = await Video.find().populate('owner',"username avatar")
+
+    if(!videos.length){
+        throw new ApiError(400, "No videos has been uploaded yet")
+    }   
+
+    return res.status(200).json(
+        new ApiResponse(200,videos,"Videos fetched successfully ")
+    )
+})
 const updateVideo = asyncHandler(async(req,res)=>{
     const videoId = req.params?.videoId
-    const {title,description,isPublished} = req.body
+    const {title,description} = req.body
 
     if(!title || !description){
         throw new ApiError(400,'All fields required')
     }
 
-    const videoLocalPath = req.files?.videoFile?.[0]?.path
-    const thumbnailLocalPath = req.files?.thumbnail?.[0]?.path
+    const thumbnailLocalPath = req.file?.path
 
-    if(!videoLocalPath){
-        throw new ApiError(400,'Video file required')
-    }
     if(!thumbnailLocalPath){
         throw new ApiError(400,'Thumbnail required')
     }
 
-    const updateVideoFile = await uploadOnCloudinary(videoLocalPath)
     const updateThumbnail = await uploadOnCloudinary(thumbnailLocalPath)
 
-    if(!updateVideoFile.url || !updateThumbnail.url){
-        throw new ApiError(500,'Something went wrong file uploading video or thumbnail')
+    if(!updateThumbnail.url){
+        throw new ApiError(500,'Something went wrong file uploading thumbnail')
     }
 
     const updateVideo = await Video.findOneAndUpdate(
@@ -246,12 +247,9 @@ const updateVideo = asyncHandler(async(req,res)=>{
             owner: req.user?._id,
         },
         {
-            videoFile: updateVideoFile.url,
             thumbnail: updateThumbnail.url,
             title: title,
             description:description,
-            duration: updateVideoFile.duration,
-            isPublished:isPublished
         },
         {
             new:true
@@ -295,10 +293,33 @@ const deleteVideo = asyncHandler(async(req,res)=>{
     )
 })
 
+const togglePublishStatus = asyncHandler(async (req, res) => {
+    const { videoId } = req.params
+
+    const video = await Video.findOne({
+        _id:videoId,
+        owner:req.user?._id
+    })
+
+    if(video.isPublished){
+        video.isPublished = false    
+    }else{
+        video.isPublished = true  
+    }
+
+    await video.save({validateBeforeSave:false})
+
+    return res.status(200).json(
+        new ApiResponse(200,video,"Published status changed successfully")
+    )
+
+})
 export {
     uploadVideo,
     getVideo,
+    getAllVideos,
     channelVideos,
     updateVideo,
-    deleteVideo
+    deleteVideo,
+    togglePublishStatus
 }

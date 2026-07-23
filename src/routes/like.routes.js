@@ -1,10 +1,12 @@
 import express from 'express'
 
-import { verifyJWT } from '../middlewares/auth.middleware.js'
-import { getLikedVideos} from '../controllers/like.contollers.js'
+import { getLikedVideos, likeComment, likeTweet, likeVideo} from '../controllers/like.contollers.js'
 
 const likeRouter = express.Router()
 
-likeRouter.get('/liked-videos',verifyJWT,getLikedVideos)
+likeRouter.post('/toggle/video/:videoId',likeVideo)
+likeRouter.post('/toggle/comment/:commentId',likeComment)
+likeRouter.post('/toggle/tweet/:tweetId',likeTweet)
+likeRouter.get('/liked-videos',getLikedVideos)
 
 export default likeRouter

@@ -6,28 +6,23 @@ const likeSchema = new mongoose.Schema({
         type:mongoose.Schema.Types.ObjectId,
         ref:'Video',
         required:true,
-        unique:true
     },
 
-    userLiked:[
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-        },
-    ],
-    userDisliked:[
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-        },
-    ],
+    likedBy:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+    },
 
-    userLiked:[
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-        },
-    ],
+    commentLiked:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Comment",
+    },
+
+    tweetLiked:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Tweet",
+    },
+
 },{timestamps:true})
 
 export const Like = mongoose.model('Like',likeSchema)

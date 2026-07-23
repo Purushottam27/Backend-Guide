@@ -26,9 +26,53 @@ const makeTweet = asyncHandler(async(req,res)=>{
 
 const getTweets = asyncHandler(async(req,res)=>{
 
-    const tweet = await Tweet.find().populate("owner","username avatar")
+    const tweet = await Tweet.aggregate([
+        {
+            $lookup:{
+                from:"users",
+                localField:"owner",
+                foreignField:"_id",
+                as:"ownerDetail",
+                pipeline:[
+                    {
+                        $project:{
+                            username: 1,
+                            avatar:1
+                        }
+                    }
+                ]
 
-    if(!tweet){
+            }
+        },
+        {
+            $lookup:{
+                from:"likes",
+                localField:"_id",
+                foreignField:"tweetLiked",
+                as:"likedDetails",
+                
+            }
+        },
+        {
+            $addFields:{
+                owner:{
+                    $first:"$ownerDetail"
+                },
+                totalLikes:{
+                    $size:"$likedDetails"
+                },
+                isLiked:{
+                    $cond:{
+                        if: req.user?._id === "$likeDetails.likedBy",
+                        then: true,
+                        else:false
+                    }
+                }
+            }
+        }
+    ])
+
+    if(!tweet.length){
         throw new ApiError(200,"No tweet yet")
     }
 
@@ -38,13 +82,63 @@ const getTweets = asyncHandler(async(req,res)=>{
 })
 
 const getUserTweet = asyncHandler(async(req,res)=>{
-    const userId = req.user?._id
+    const userId = req.params.userId
 
     const tweet = await Tweet.find({
         owner:userId
     }).populate("owner","username avatar")
 
-    if(!tweet){
+    const tweet = await Tweet.aggregate([
+        {
+            $match:{
+                owner:userId
+            }
+        },
+        {
+            $lookup:{
+                from:"users",
+                localField:"owner",
+                foreignField:"_id",
+                as:"ownerDetail",
+                pipeline:[
+                    {
+                        $project:{
+                            username: 1,
+                            avatar:1
+                        }
+                    }
+                ]
+
+            }
+        },
+        {
+            $lookup:{
+                from:"likes",
+                localField:"_id",
+                foreignField:"tweetLiked",
+                as:"likedDetails",
+                
+            }
+        },
+        {
+            $addFields:{
+                owner:{
+                    $first:"$ownerDetail"
+                },
+                totalLikes:{
+                    $size:"$likedDetails"
+                },
+                isLiked:{
+                    $cond:{
+                        if: req.user?._id === "$likeDetails.likedBy",
+                        then: true,
+                        else:false
+                    }
+                }
+            }
+        }
+    ])
+    if(!tweet.length){
         throw new ApiError(200,"you have not tweeted yet")
     }
 

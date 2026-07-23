@@ -19,7 +19,14 @@ const toggleSubscription = asyncHandler(async(req,res)=>{
             channel:channelId
         })
         return res.status(200).json(
-            new ApiResponse(200,{isSubscribed:true},"Channel is unsubscribed")
+            new ApiResponse(
+                200,
+                {
+                    subscribed:subscribed,
+                    isSubscribed:true
+                },
+                "Channel is unsubscribed"
+            )
         )
     }
 

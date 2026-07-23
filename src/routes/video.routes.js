@@ -1,12 +1,10 @@
 import express from 'express'
 import {upload} from "../middlewares/multer.middleware.js"
-import { verifyJWT } from '../middlewares/auth.middleware.js'
-import { channelVideos, deleteVideo, getVideo, updateVideo, uploadVideo } from '../controllers/video.controllers.js'
-import { handleDislike, handleLike } from '../controllers/like.contollers.js'
+import { channelVideos, deleteVideo, getAllVideos, getVideo, togglePublishStatus, updateVideo, uploadVideo } from '../controllers/video.controllers.js'
 
 const videoRouter = express.Router()
 
-videoRouter.post('/uploadVideo',verifyJWT,upload.fields([
+videoRouter.post('/uploadVideo',upload.fields([
     {
         name:"videoFile",
         maxCount:1
@@ -18,17 +16,16 @@ videoRouter.post('/uploadVideo',verifyJWT,upload.fields([
     
 ]), uploadVideo)
 
-videoRouter.get('/:id',verifyJWT,getVideo)
+videoRouter.get('/',getAllVideos)
 
-videoRouter.get('/channel/:channelName',verifyJWT,channelVideos)
+videoRouter.get('/:id',getVideo) // video by id
 
-videoRouter.patch('/:videoId',verifyJWT,updateVideo)
+videoRouter.get('/:channelName',channelVideos)
 
-videoRouter.delete('/:videoId',verifyJWT,deleteVideo)
+videoRouter.patch('/:videoId',
+    upload.single("thumbnail"),updateVideo)
 
-// from like controller
-videoRouter.post('/:videoId/like',verifyJWT,handleLike)
+videoRouter.delete('/:videoId',deleteVideo)
 
-videoRouter.post('/:videoId/dislike',verifyJWT,handleDislike)
-
+videoRouter.route("/toggle/publish/:videoId").patch(togglePublishStatus);
 export default videoRouter

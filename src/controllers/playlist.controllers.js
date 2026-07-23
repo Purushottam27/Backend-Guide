@@ -62,7 +62,7 @@ const getPlaylistById = asyncHandler(async(req,res)=>{
 })
 
 const getUserPlaylists = asyncHandler(async(req,res)=>{
-    const userId = req.user?._id
+    const userId = req.params.userId
 
     const playlists = await Playlist.aggregate([
         {
